@@ -1,0 +1,16 @@
+{
+  "name": "access-app",
+  "version": "1.0.0",
+  "description": "App to access places.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node app/server.js"
+  },
+  "author": "dm@auxcode.com, aa@auxcode.com",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0"
+  }
+}
