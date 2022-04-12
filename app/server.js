@@ -10,7 +10,9 @@ app.use(bodyParser.json())
 
 require('./routes/access.routes')(app)
 
-const config = require('./config/config.js')
-app.listen(config.port, () => {
+const config = require('./configs/config.js')
+const server = app.listen(config.port, () => {
   console.log(`Server is listening on port ${config.port}`)
 })
+
+require('./ws/ws.server').startWebSocket(server);
