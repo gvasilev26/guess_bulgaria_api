@@ -17,7 +17,7 @@ class WsServer {
             })
 
             ws.on('close', () => {
-                if (!!ws.id) wsBusiness.removeUser(ws)
+                if (!!ws.id) wsBusiness.disconnectUser(ws)
                 this.terminateAndClearTimeout(ws)
             })
         })
@@ -27,8 +27,7 @@ class WsServer {
     heartbeat (ws) {
         clearTimeout(ws.timeout)
         ws.timeout = setTimeout(() => {
-            //todo maybe change it as a someone who left so they can rejoin
-            if (!!ws.id) wsBusiness.removeUser(ws)
+            if (!!ws.id) wsBusiness.disconnectUser(ws)
             this.terminateAndClearTimeout(ws)
         }, 30000)
     }
@@ -38,24 +37,48 @@ class WsServer {
         console.log(wsData)
         ws.id = wsData.id
         ws.roomId = wsData.roomId
-        switch(message.type){
+        switch (message.type) {
             case 'join': {
-                wsBusiness.addUser(ws)
-                break;
+                wsBusiness.addUser(ws, wsData)
+                break
             }
             case 'leave': {
-                wsBusiness.removeUser(ws)
-                break;
+                wsBusiness.removeUser(wsData.roomId, wsData.id)
+                break
+            }
+            case 'changeSettings': {
+                wsBusiness.changeSettings(wsData)
+                break
+            }
+            case 'start': {
+                await wsBusiness.startGame(wsData.roomId, wsData.id)
+                break
+            }
+            case 'changeColor': {
+                await wsBusiness.changeColor(wsData.roomId, wsData.id, wsData.color)
+                break
+            }
+            case 'answer': {
+                await wsBusiness.answer(wsData)
+                break
+            }
+            case 'nextRound': {
+                await wsBusiness.nextRound(wsData.roomId, wsData.id)
+                break
+            }
+            case 'reconnect': {
+                wsBusiness.reconnect(ws, wsData.roomId)
+                break
             }
             case 'closeRoom': {
-                let room = wsBusiness.closeRoom(ws.roomId)
+                let room = wsBusiness.closeRoom(wsData.roomId)
                 // remove everyone from the room on close
-                for (let ws of room) this.terminateAndClearTimeout(ws)
-                break;
+                for (let ws of room.players) this.terminateAndClearTimeout(ws)
+                break
             }
             case 'create': {
-                wsBusiness.createRoom(ws)
-                break;
+                wsBusiness.createRoom(ws, wsData)
+                break
             }
         }
     }
@@ -64,12 +87,6 @@ class WsServer {
     terminateAndClearTimeout (ws) {
         clearTimeout(ws.timeout)
         ws.terminate()
-    }
-
-    notifyAllUsers (roomId, type, message) {
-        wsBusiness.rooms[roomId].forEach(user => {
-            user.send(JSON.stringify({ type, message }))
-        })
     }
 }
 
