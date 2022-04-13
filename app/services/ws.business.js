@@ -1,19 +1,6 @@
 const User = require('../models/user.model')
 const mongoose = require('mongoose')
 
-/**
- * Possible socket output message types:
- *
- * player-join
- * player-leave
- * current-data
- * make-creator
- * settings-change
- * color-change
- * start-round
- * end-round
- * end-game
- */
 class WebSocketBusiness {
     rooms = new Map()
 
@@ -238,8 +225,9 @@ class WebSocketBusiness {
 
     async updatePlayersStatistics (room) {
         const maxPoints = Math.max.apply(Math, room.players.map(p => p.points))
+        let requests = []
         for (let player of room.players) {
-            await User.updateOne({ _id: new mongoose.Types.ObjectId(player.id) }, {
+            requests.push(User.updateOne({ _id: new mongoose.Types.ObjectId(player.id) }, {
                 $inc: {
                     'stats.multi.totalPoints': player.points,
                     'stats.multi.roundsPlayed': room.playedRounds.length,
@@ -247,8 +235,9 @@ class WebSocketBusiness {
                     'stats.multi.gamesPlayed': 1,
                     'stats.multi.firstPlaces': maxPoints === player.points ? 1 : 0,
                 }
-            }).exec()
+            }).exec())
         }
+        await Promise.all(requests)
     }
 
     getDistance (lat1, lon1, lat2, lon2) {

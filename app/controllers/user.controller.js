@@ -8,16 +8,17 @@ exports.createUser = async (req, res) => {
 }
 
 exports.getUserStats = async (req, res) => {
-    const user = await User.findById(new mongoose.Types.ObjectId(req.params.userId), {stats: 1});
+    const user = await User.findById(new mongoose.Types.ObjectId(req.params.id), {stats: 1});
     return res.status(200).send({ ...user.stats })
 }
 
-exports.updateUserStats = async (req, res) => {
-    await User.updateOne({ _id: new mongoose.Types.ObjectId(req.params.userId) }, {
+exports.playGame = async (req, res) => {
+    const points = Number(req.params.points)
+    await User.updateOne({ _id: new mongoose.Types.ObjectId(req.params.id) }, {
         $inc: {
-            'stats.single.totalPoints': req.body.points,
+            'stats.single.totalPoints': points,
             'stats.single.roundsPlayed': 1,
-            'stats.single.perfectAnswers': req.body.points === 1000 ? 1 : 0
+            'stats.single.perfectAnswers': points === 1000 ? 1 : 0
         }
     }).exec()
     return res.status(204).send()

@@ -3,5 +3,7 @@ module.exports = (app) => {
 
   app.get('/api/users', userController.createUser)
 
-  app.get('/api/users/:userId', userController.getUserStats)
+  app.get('/api/users/:id', userController.getUserStats)
+
+  app.get('/api/users/:id/game/:points', userController.playGame)
 }

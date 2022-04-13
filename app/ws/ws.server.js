@@ -38,6 +38,10 @@ class WsServer {
         ws.id = wsData.id
         ws.roomId = wsData.roomId
         switch (message.type) {
+            case 'create': {
+                wsBusiness.createRoom(ws, wsData)
+                break
+            }
             case 'join': {
                 wsBusiness.addUser(ws, wsData)
                 break
@@ -46,7 +50,7 @@ class WsServer {
                 wsBusiness.removeUser(wsData.roomId, wsData.id)
                 break
             }
-            case 'changeSettings': {
+            case 'change-settings': {
                 wsBusiness.changeSettings(wsData)
                 break
             }
@@ -54,7 +58,7 @@ class WsServer {
                 await wsBusiness.startGame(wsData.roomId, wsData.id)
                 break
             }
-            case 'changeColor': {
+            case 'change-color': {
                 await wsBusiness.changeColor(wsData.roomId, wsData.id, wsData.color)
                 break
             }
@@ -62,7 +66,7 @@ class WsServer {
                 await wsBusiness.answer(wsData)
                 break
             }
-            case 'nextRound': {
+            case 'next-round': {
                 await wsBusiness.nextRound(wsData.roomId, wsData.id)
                 break
             }
@@ -70,14 +74,13 @@ class WsServer {
                 wsBusiness.reconnect(ws, wsData.roomId)
                 break
             }
-            case 'closeRoom': {
+            case 'close-room': {
                 let room = wsBusiness.closeRoom(wsData.roomId)
                 // remove everyone from the room on close
-                for (let ws of room.players) this.terminateAndClearTimeout(ws)
-                break
-            }
-            case 'create': {
-                wsBusiness.createRoom(ws, wsData)
+                for (let ws of room.players) {
+                    ws.send(JSON.stringify({ type: 'close-room' }))
+                    this.terminateAndClearTimeout(ws)
+                }
                 break
             }
         }
