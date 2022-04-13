@@ -62,9 +62,9 @@ class WebSocketBusiness {
         let userIndex = room.players.findIndex((user) => user.id === userId)
         if (userIndex !== -1) room.players.slice(userIndex, 1)
 
-        if (room.players.length === 0) this.closeRoom(roomId)
+        if (!room.players.length) this.closeRoom(roomId)
         else {
-            if (userIndex === 0) {
+            if (!userIndex) {
                 let leader = room.players[0]
                 leader.isCreator = true
                 leader.socket.send(JSON.stringify({ type: 'make-creator' }))
@@ -75,7 +75,7 @@ class WebSocketBusiness {
 
     changeSettings (socketData) {
         const room = this.rooms[socketData.roomId]
-        if (room.players[0].id !== socketData.id) return
+        if (!room || room.players[0].id !== socketData.id) return
         room.setting = {
             regions: socketData.regions || room.setting.regions || [],
             maxRounds: socketData.maxRounds || room.setting.maxRounds || 10,
@@ -94,7 +94,7 @@ class WebSocketBusiness {
                 break
             }
 
-        if (room.players.length === 0 || room.players.every(player => player.status === 0)) this.closeRoom(ws.roomId)
+        if (!room.players.length || room.players.every(player => !player.status)) this.closeRoom(ws.roomId)
     }
 
     async startGame (roomId, userId) {
@@ -116,7 +116,7 @@ class WebSocketBusiness {
 
     async nextRound (roomId, userId) {
         const room = this.rooms[roomId]
-        if (room.players[0].id !== userId) return
+        if (!room || room.players[0].id !== userId) return
 
         if (room.playedRounds.length === room.settings.maxRounds) await this.endGame(room)
         else await this.changeRoundTarget(room)
@@ -124,6 +124,7 @@ class WebSocketBusiness {
 
     reconnect (ws, roomId) {
         const room = this.rooms[roomId]
+        if(!room) return;
         for (let player of room.players)
             if (player.id === ws.id) {
                 player.status = 1
@@ -136,7 +137,7 @@ class WebSocketBusiness {
 
     changeColor (roomId, userId, color) {
         const room = this.rooms[roomId]
-        if (color > 15 || color < 0 || !this.isColorFree(room, color)) return
+        if (!room || color > 15 || color < 0 || !this.isColorFree(room, color)) return
 
         for (let player of room.players)
             if (player.id === userId) {
@@ -203,7 +204,7 @@ class WebSocketBusiness {
 
         const locations = await Location.find(query).exec()
 
-        if (locations.length === 0) return undefined
+        if (!locations.length) return undefined
         return locations[Math.floor(Math.random() * locations.length)]
     }
 
@@ -219,7 +220,7 @@ class WebSocketBusiness {
         for (let player of room.players) {
             player.points = 0
             player.lastAnswer = undefined
-            if (player.status === 0) this.removeUser(room.roomId, player.id)
+            if (!player.status) this.removeUser(room.roomId, player.id)
         }
         room.currentRound = undefined
         room.playedRounds = []
@@ -227,7 +228,7 @@ class WebSocketBusiness {
     }
 
     async updatePlayersStatistics (room) {
-        const maxPoints = Math.max.apply(Math, room.players.map(p => p.points))
+        const maxPoints = Math.max(...room.players.map(p => p.points))
         let requests = []
         for (let player of room.players) {
             requests.push(User.updateOne({ _id: new mongoose.Types.ObjectId(player.id) }, {
