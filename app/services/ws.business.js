@@ -118,7 +118,8 @@ class WebSocketBusiness {
         const room = this.rooms[roomId]
         if (room.players[0].id !== userId) return
 
-        await this.changeRoundTarget(room)
+        if (room.playedRounds.length === room.settings.maxRounds) await this.endGame(room)
+        else await this.changeRoundTarget(room)
     }
 
     reconnect (ws, roomId) {
@@ -179,17 +180,17 @@ class WebSocketBusiness {
             player.points += player.roundPoints
         }
 
-        if (room.playedRounds.length === room.settings.maxRounds) {
-            this.notifyAllPlayers(room, 'end-game', this.getFullRoundData())
-            await this.endGame(room)
-        } else this.notifyAllPlayers(room, 'end-round', this.getFullRoundData())
-
+        this.notifyAllPlayers(room, 'end-round', this.getFullRoundData())
     }
 
     async changeRoundTarget (room) {
         for (const player of room.players) player.lastAnswer = undefined
         if (room.currentRound) room.playedRounds.push(room.currentRound._id)
         room.currentRound = await this.getNextLocation(room)
+        if (room.currentRound === undefined) {
+            await this.endGame(room)
+            return
+        }
         room.roundEndTime = Date.now() + room.settings.answerTimeInSeconds * 1000
         this.notifyAllPlayers(room, 'start-round', this.getIngameRoundData(room))
     }
@@ -202,6 +203,7 @@ class WebSocketBusiness {
 
         const locations = await Location.find(query).exec()
 
+        if (locations.length === 0) return undefined
         return locations[Math.floor(Math.random() * locations.length)]
     }
 
@@ -212,6 +214,7 @@ class WebSocketBusiness {
     }
 
     async endGame (room) {
+        this.notifyAllPlayers(room, 'end-game', this.getFullRoundData())
         await this.updatePlayersStatistics()
         for (let player of room.players) {
             player.points = 0
