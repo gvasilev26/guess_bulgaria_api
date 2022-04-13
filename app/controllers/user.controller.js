@@ -1,5 +1,4 @@
 const User = require('../models/user.model')
-const mongoose = require('mongoose')
 
 exports.createUser = async (req, res) => {
     let user = new User({ username: 'Random generated name', stats: {} })
@@ -8,13 +7,13 @@ exports.createUser = async (req, res) => {
 }
 
 exports.getUserStats = async (req, res) => {
-    const user = await User.findById(new mongoose.Types.ObjectId(req.params.id), {stats: 1});
+    const user = await User.findById(req.params.id, {stats: 1});
     return res.status(200).send({ ...user.stats })
 }
 
 exports.playGame = async (req, res) => {
     const points = Number(req.params.points)
-    await User.updateOne({ _id: new mongoose.Types.ObjectId(req.params.id) }, {
+    await User.updateOne({ _id: req.params.id }, {
         $inc: {
             'stats.single.totalPoints': points,
             'stats.single.roundsPlayed': 1,

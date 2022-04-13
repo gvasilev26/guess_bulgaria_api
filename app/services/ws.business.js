@@ -1,5 +1,4 @@
 const User = require('../models/user.model')
-const mongoose = require('mongoose')
 
 class WebSocketBusiness {
     rooms = new Map()
@@ -231,7 +230,7 @@ class WebSocketBusiness {
         const maxPoints = Math.max(...room.players.map(p => p.points))
         let requests = []
         for (let player of room.players) {
-            requests.push(User.updateOne({ _id: new mongoose.Types.ObjectId(player.id) }, {
+            requests.push(User.updateOne({ _id: player.id }, {
                 $inc: {
                     'stats.multi.totalPoints': player.points,
                     'stats.multi.roundsPlayed': room.playedRounds.length,
