@@ -4,7 +4,8 @@
   "description": "App to access places.",
   "main": "server.js",
   "scripts": {
-    "start": "node app/server.js"
+    "start": "node app/server.js",
+    "client": "node app/client.js"
   },
   "author": "dm@auxcode.com, aa@auxcode.com",
   "license": "ISC",

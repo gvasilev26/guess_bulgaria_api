@@ -4,8 +4,16 @@ class WebSocketBusiness {
     rooms = new Map()
 
     createRoom (ws, socketData) {
-        this.rooms[socketData.roomId] = {
-            roomId: socketData.roomId,
+        if (!socketData.id) return
+
+        let roomId
+        do {
+            roomId = Math.floor(Math.random() * 899999 + 100000)
+            if (!this.rooms[roomId]) break
+        } while (true)
+
+        this.rooms[roomId] = {
+            roomId: roomId,
             settings: {
                 regions: socketData.regions || [],
                 maxRounds: socketData.maxRounds || 10,
@@ -26,6 +34,10 @@ class WebSocketBusiness {
                 points: 0,
             }]
         }
+        ws.send(JSON.stringify({
+            type: 'current-data',
+            message: this.getIngameRoundData(this.rooms[roomId])
+        }))
     }
 
     closeRoom (roomId) {
@@ -123,7 +135,7 @@ class WebSocketBusiness {
 
     reconnect (ws, roomId) {
         const room = this.rooms[roomId]
-        if(!room) return;
+        if (!room) return
         for (let player of room.players)
             if (player.id === ws.id) {
                 player.status = 1
@@ -261,6 +273,7 @@ class WebSocketBusiness {
 
     getIngameRoundData (room) {
         return {
+            roomId: room.roomId,
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,

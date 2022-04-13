@@ -37,7 +37,7 @@ class WsServer {
         console.log(wsData)
         ws.id = wsData.id
         ws.roomId = wsData.roomId
-        switch (message.type) {
+        switch (wsData.type) {
             case 'create': {
                 wsBusiness.createRoom(ws, wsData)
                 break
