@@ -2,8 +2,9 @@ const mongoose = require('mongoose')
 
 const schema = mongoose.Schema({
     _id: {
-        type: mongoose.Types.ObjectId,
-        default: new mongoose.Types.ObjectId()
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        auto: true,
     },
     stats: {
         single: {
