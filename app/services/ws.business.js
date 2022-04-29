@@ -34,24 +34,24 @@ class WebSocketBusiness {
                 points: 0,
             }]
         }
-        ws.send(JSON.stringify({
-            type: 'current-data',
-            message: this.getIngameRoundData(this.rooms[roomId])
-        }))
+        this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms[roomId]));
     }
 
     closeRoom (roomId) {
-        let room = this.rooms.get(roomId)
+        let room = this.rooms[roomId]
         if (!room) return
 
-        this.rooms.delete(roomId)
+        delete this.rooms[roomId]
         return room
     }
 
     addUser (ws, socketData) {
         const room = this.rooms[socketData.roomId]
-        if (!room) return
-        room.players.add({
+        if (!room || room.players.length >= 16) {
+            this.notifyPlayer(ws, 'join-failed');
+            return
+        }
+        room.players.push({
             socket: ws,
             id: socketData.id,
             status: 1,
@@ -63,7 +63,7 @@ class WebSocketBusiness {
             points: 0,
         })
         this.notifyAllPlayers(room, 'player-join', { players: room.players })
-        ws.send(JSON.stringify({ type: 'current-data', message: this.getIngameRoundData(room) }))
+        this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(room));
     }
 
     removeUser (roomId, userId) {
@@ -71,14 +71,14 @@ class WebSocketBusiness {
         if (!room) return
 
         let userIndex = room.players.findIndex((user) => user.id === userId)
-        if (userIndex !== -1) room.players = room.players.slice(userIndex, 1)
+        if (userIndex !== -1) room.players.splice(userIndex, 1)
 
         if (!room.players.length) this.closeRoom(roomId)
         else {
             if (!userIndex) {
                 let leader = room.players[0]
                 leader.isCreator = true
-                leader.socket.send(JSON.stringify({ type: 'make-creator' }))
+                this.notifyPlayer(leader.socket, 'make-creator');
             }
             this.notifyAllPlayers(room, 'player-leave', { players: room.players })
         }
@@ -143,7 +143,7 @@ class WebSocketBusiness {
                 break
             }
 
-        ws.send(JSON.stringify({ type: 'current-data', message: this.getIngameRoundData(room) }))
+        this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(room));
     }
 
     changeColor (roomId, userId, color) {
@@ -220,9 +220,18 @@ class WebSocketBusiness {
     }
 
     notifyAllPlayers (room, type, message) {
+        if(message.players){
+            message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')));
+        }
         room.players.forEach(user => {
-            user.socket.send(JSON.stringify({ type, message }))
+            if(user.socket.readyState === 1)
+                user.socket.send(JSON.stringify({ type, message }))
         })
+    }
+
+    notifyPlayer(ws, type, message){
+        if(ws.readyState === 1)
+            ws.send(JSON.stringify({ type, message }))
     }
 
     async endGame (room) {
