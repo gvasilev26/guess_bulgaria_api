@@ -23,7 +23,7 @@ mongoose.connect(config.mongodbUrl).then(() => {
     process.exit()
 })
 
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, '0.0.0.0', () => {
     console.log(`Server is listening on port ${config.port}`)
 })
 

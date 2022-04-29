@@ -62,16 +62,16 @@ class WebSocketBusiness {
             lastAnswer: undefined,
             points: 0,
         })
-        this.notifyAllPlayers(room, 'player-join', ws.id)
+        this.notifyAllPlayers(room, 'player-join', { players: room.players })
         ws.send(JSON.stringify({ type: 'current-data', message: this.getIngameRoundData(room) }))
     }
 
-    removeUser (ws, roomId, userId) {
+    removeUser (roomId, userId) {
         const room = this.rooms[roomId]
         if (!room) return
 
         let userIndex = room.players.findIndex((user) => user.id === userId)
-        if (userIndex !== -1) room.players.slice(userIndex, 1)
+        if (userIndex !== -1) room.players = room.players.slice(userIndex, 1)
 
         if (!room.players.length) this.closeRoom(roomId)
         else {
@@ -80,7 +80,7 @@ class WebSocketBusiness {
                 leader.isCreator = true
                 leader.socket.send(JSON.stringify({ type: 'make-creator' }))
             }
-            this.notifyAllPlayers(room, 'player-leave', userId)
+            this.notifyAllPlayers(room, 'player-leave', { players: room.players })
         }
     }
 
