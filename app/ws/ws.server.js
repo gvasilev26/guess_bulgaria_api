@@ -29,7 +29,7 @@ class WsServer {
         ws.timeout = setTimeout(() => {
             if (!!ws.id) wsBusiness.disconnectUser(ws)
             this.terminateAndClearTimeout(ws)
-        }, 30000)
+        }, 3000000)
     }
 
     async parseMessage (message, ws) {
