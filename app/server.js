@@ -27,9 +27,6 @@ const server = app.listen(config.port, () => {
     console.log(`Server is listening on port ${config.port}`)
 })
 
-app.get('/api/ping', async (req, res) => {
-    console.log('PINGED')
-    return res.status(201).send()
-})
+app.get('/api/ping', async (req, res) => res.status(201).send())
 
 require('./ws/ws.server').startWebSocket(server)

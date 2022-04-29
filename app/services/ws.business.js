@@ -88,9 +88,9 @@ class WebSocketBusiness {
         const room = this.rooms[socketData.roomId]
         if (!room || room.players[0].id !== socketData.id) return
         room.setting = {
-            regions: socketData.regions || room.setting.regions || [],
-            maxRounds: socketData.maxRounds || room.setting.maxRounds || 10,
-            answerTimeInSeconds: socketData.answerTimeInSeconds || room.setting.answerTimeInSeconds || 30,
+            regions: socketData.regions || room.settings.regions || [],
+            maxRounds: socketData.maxRounds || room.settings.maxRounds || 10,
+            answerTimeInSeconds: socketData.answerTimeInSeconds || room.settings.answerTimeInSeconds || 30,
         }
         this.notifyAllPlayers(room, 'settings-change', room.settings)
     }
