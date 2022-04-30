@@ -1,4 +1,5 @@
 const User = require('../models/user.model')
+const Location = require('../models/location.model')
 
 class WebSocketBusiness {
     rooms = new Map()
@@ -235,8 +236,8 @@ class WebSocketBusiness {
     }
 
     async endGame (room) {
-        this.notifyAllPlayers(room, 'end-game', this.getFullRoundData())
-        await this.updatePlayersStatistics()
+        this.notifyAllPlayers(room, 'end-game', this.getFullRoundData(room))
+        await this.updatePlayersStatistics(room)
         for (let player of room.players) {
             player.points = 0
             player.lastAnswer = undefined
