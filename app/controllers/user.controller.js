@@ -10,6 +10,7 @@ exports.createUser = async (req, res) => {
 
 exports.getUserStats = async (req, res) => {
     const user = await User.findById(req.params.id, { stats: 1 })
+    if(!user) return res.status(404).send();
     return res.status(200).send({ ...user.stats })
 }
 

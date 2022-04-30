@@ -5,15 +5,17 @@
   "main": "server.js",
   "scripts": {
     "start": "node app/server.js",
-    "client": "node app/client.js"
+    "client": "node app/client.js",
+    "scrap": "node app/scrapper.js"
   },
   "author": "dm@auxcode.com, aa@auxcode.com",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
-    "ws": "^8.5.0",
-    "mongoose": "^6.2.10"
+    "express": "^4.17.1",
+    "jsdom": "^19.0.0",
+    "mongoose": "^6.2.10",
+    "ws": "^8.5.0"
   }
 }

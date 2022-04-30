@@ -227,6 +227,9 @@ class WebSocketBusiness {
         room.players.forEach(user => {
             if(user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
+            else if(user.socket.readyState === 3){
+                console.log("NOT OK", user.id);
+            }
         })
     }
 

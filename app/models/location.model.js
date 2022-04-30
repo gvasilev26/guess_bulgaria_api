@@ -7,7 +7,7 @@ const schema = mongoose.Schema({
         auto: true,
     },
     name: String,
-    imageUrl: String,
+    image: String,
     region: Number,
     coordinates: [],
     description: String
