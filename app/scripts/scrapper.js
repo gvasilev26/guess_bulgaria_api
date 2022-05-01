@@ -1,9 +1,9 @@
 const { JSDOM } = require('jsdom')
 const https = require('https')
 const mongoose = require('mongoose')
-const config = require('./configs/config')
-const Location = require('./models/location.model')
-const RegionsFromSNO = require('./enums/regionsFromSNO')
+const config = require('../configs/config')
+const Location = require('../models/location.model')
+const RegionsFromSNO = require('../enums/regions-from-sno')
 
 const options = {
     hostname: 'www.btsbg.org',
@@ -83,7 +83,7 @@ async function scrapPage (url, data) {
         let coordinates = []
         try {
             const match = /!2d([0-9.]+)!3d([0-9.]+)/gm.exec(document.querySelector('iframe').getAttribute('src'))
-            coordinates = [match[2], match[1]]
+            coordinates = [+match[2], +match[1]]
         } catch (e) {}
 
         const region = document.querySelectorAll('.field-item.even')[2].innerHTML.trim()
