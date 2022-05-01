@@ -3,6 +3,7 @@ const https = require('https')
 const mongoose = require('mongoose')
 const config = require('./configs/config')
 const Location = require('./models/location.model')
+const RegionsFromSNO = require('./enums/regionsFromSNO')
 
 const options = {
     hostname: 'www.btsbg.org',
@@ -34,14 +35,17 @@ async function readMainPage (data) {
     let dom = new JSDOM(data)
     let q = dom.window.document.querySelectorAll('.glink .field-content a')
     let step = 1000
-    // let skip = true
+    let skip = true
     for (let a of q) {
-        // if(a.getAttribute('href') === '/100nto/panteon-na-gsrakovski') skip = false;
-        // if(skip) continue
+        if (a.getAttribute('href') === '/100nto/kshcha-muzey-slivenski-bit') {
+            skip = false
+            continue
+        }
+        if (skip) continue
         setTimeout(async () => {
             await readSubPage(a.getAttribute('href'))
         }, step)
-        step += 1000
+        step += 1500
     }
 }
 
@@ -68,23 +72,36 @@ async function scrapPage (url, data) {
             console.log('no image', url)
             return
         }
+        imageUrl = `https://www.btsbg.org/sites/default/files/obekti/${imageUrl.getAttribute('src')
+            .split('?')[0].split('/').splice(-1, 1)[0]}`
+
         const name = document.querySelector('.page-header').innerHTML.trim()
-        imageUrl = `https://www.btsbg.org/sites/default/files/obekti/${imageUrl.getAttribute('src').split('?')[0].split('/').splice(-1, 1)[0]}`
-        let region = document.querySelectorAll('.field-item.even')[2].innerHTML.trim()
-        let description = Array.from(document.querySelectorAll('.rtejustify'))
+        const description = Array.from(document.querySelectorAll('.rtejustify'))
             .map((i) => i.innerHTML.includes('<a') ? '' : i.innerHTML)
-            .join().replace(/&nbsp;/g, ' ').trim()
+            .join('\n').replace(/&nbsp;/g, ' ').trim()
+
         let coordinates = []
         try {
             const match = /!2d([0-9.]+)!3d([0-9.]+)/gm.exec(document.querySelector('iframe').getAttribute('src'))
             coordinates = [match[2], match[1]]
         } catch (e) {}
-        await new Location({
-            name,
-            description,
-            coordinates,
-            image: await getBase64FromUrl(imageUrl)
-        }).save()
+
+        const region = document.querySelectorAll('.field-item.even')[2].innerHTML.trim()
+        const regionId = RegionsFromSNO[region]
+
+        try {
+            await new Location({
+                name,
+                description,
+                coordinates,
+                // check if undefined because || will replace 0 with -1
+                region: regionId === undefined ? -1 : regionId,
+                image: await getBase64FromUrl(imageUrl)
+            }).save()
+        } catch (e) {
+            console.log('NOT SAVED ', url)
+            return
+        }
         console.log('SAVED ', url)
     } catch (e) {
         console.error(e)
