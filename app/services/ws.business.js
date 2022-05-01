@@ -57,7 +57,7 @@ class WebSocketBusiness {
             id: socketData.id,
             status: 1,
             username: socketData.username,
-            color: this.getFreeColor(room),
+            color: this.getFreeColor(room, socketData.color),
             roundPoints: undefined,
             isCreator: false,
             lastAnswer: undefined,
@@ -162,11 +162,9 @@ class WebSocketBusiness {
 
     // helper functions
 
-    getFreeColor (room) {
-        while (true) {
-            let color = Math.floor(Math.random() * 16)
-            if (this.isColorFree(room, color)) return color
-        }
+    getFreeColor (room, color) {
+        if(this.isColorFree(room, color)) return color;
+        return this.getFreeColor(room, Math.floor(Math.random() * 16))
     }
 
     isColorFree (room, color) {
