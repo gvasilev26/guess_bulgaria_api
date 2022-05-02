@@ -188,7 +188,8 @@ class WebSocketBusiness {
                 continue
             }
             const distance = this.getDistance(player.lastAnswer[0], player.lastAnswer[1], room.currentRound.coordinates[0], room.currentRound.coordinates[1])
-            player.roundPoints = 1000 - (distance < 10 ? 0 : 5 * distance)
+            //todo scale from 1 to 5 when distance increase
+            player.roundPoints = 1000 - (distance < 10 ? 0 : 5 * distance) | 0
             if (player.roundPoints === 1000) player.perfectAnswers++
 
             if (player.roundPoints < 0) player.roundPoints = 0
