@@ -17,7 +17,6 @@ GET /api/locations - returns all locations
 * answer
 * next-round
 * reconnect
-* close-room
 * room-privacy
 
 ## Response messages types
@@ -31,7 +30,6 @@ GET /api/locations - returns all locations
 * start-round
 * end-round
 * end-game
-* close-room
 * room-privacy-notifier
 
 # .env

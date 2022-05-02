@@ -15,7 +15,7 @@ class WebSocketBusiness {
 
         this.rooms[roomId] = {
             roomId: roomId,
-            public: true,
+            isPublic: socketData.isPublic ?? true,
             settings: {
                 regions: socketData.regions || [],
                 maxRounds: socketData.maxRounds || 10,
@@ -278,11 +278,11 @@ class WebSocketBusiness {
         await Promise.all(requests)
     }
 
-    roomPrivacy(public, userId, roomId) {
-        let room = rooms[roomId]
+    roomPrivacy(isPublic, userId, roomId) {
+        let room = this.rooms[roomId]
         if (!room || !room.players.find(p => p.isCreator).id === userId) return;
-        room.public = public;
-        this.notifyAllPlayers(room, 'room-privacy-notifier', { public });
+        room.isPublic = isPublic;
+        this.notifyAllPlayers(room, 'room-privacy-notifier', { isPublic });
     }
 
     getDistance(lat1, lon1, lat2, lon2) {
@@ -304,7 +304,7 @@ class WebSocketBusiness {
     getIngameRoundData(room) {
         return {
             roomId: room.roomId,
-            public: room.public,
+            isPublic: room.isPublic,
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
@@ -322,7 +322,7 @@ class WebSocketBusiness {
     getFullRoundData(room) {
         return {
             settings: room.settings,
-            public: room.public,
+            isPublic: room.isPublic,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
             currentRound: {

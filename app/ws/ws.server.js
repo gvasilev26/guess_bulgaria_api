@@ -75,16 +75,8 @@ class WsServer {
                 break
             }
             case 'room-privacy': {
-                wsBusiness.roomPrivacy(wsData.public, wsData.id, wsData.roomId)
-            }
-            case 'close-room': {
-                let room = wsBusiness.closeRoom(wsData.roomId)
-                // remove everyone from the room on close
-                for (let ws of room.players) {
-                    ws.send(JSON.stringify({ type: 'close-room' }))
-                    this.terminateAndClearTimeout(ws)
-                }
-                break
+                wsBusiness.roomPrivacy(wsData.isPublic, wsData.id, wsData.roomId)
+                break;
             }
         }
     }
