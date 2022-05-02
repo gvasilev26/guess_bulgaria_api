@@ -121,11 +121,12 @@ class WebSocketBusiness {
         const room = this.rooms[socketData.roomId]
         if (!room) return
 
-        let player = room.players[socketData.id]
+        let player = room.players.find(p => p.id === socketData.id)
+        if(player == null) return;
         player.lastAnswer = socketData.answer
 
+        this.notifyAllPlayers(room, 'player-answer', {'id': player.id})
         if (this.hasEveryoneAnswered(room)) await this.endRound(room)
-        else this.notifyAllPlayers(room, 'player-answer', this.getIngameRoundData(room))
     }
 
     async nextRound (roomId, userId) {
@@ -185,15 +186,15 @@ class WebSocketBusiness {
                 player.roundPoints = 0
                 continue
             }
-            const distance = this.getDistance(player.lastAnswer[0], player.lastAnswer[1], room.currentRound.location[0], room.currentRound.location[1])
-            player.roundPoints = 1000 - (distance < 10 ? 0 : distance)
+            const distance = this.getDistance(player.lastAnswer[0], player.lastAnswer[1], room.currentRound.coordinates[0], room.currentRound.coordinates[1])
+            player.roundPoints = 1000 - (distance < 10 ? 0 : 5 * distance)
             if (player.roundPoints === 1000) player.perfectAnswers++
 
             if (player.roundPoints < 0) player.roundPoints = 0
             player.points += player.roundPoints
         }
 
-        this.notifyAllPlayers(room, 'end-round', this.getFullRoundData())
+        this.notifyAllPlayers(room, 'end-round', this.getFullRoundData(room))
     }
 
     async changeRoundTarget (room) {
@@ -314,7 +315,11 @@ class WebSocketBusiness {
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
-            currentRound: room.currentRound,
+            currentRound: {
+                name: room.currentRound.name,
+                coordinates: room.currentRound.coordinates,
+                description: room.currentRound.description,
+            },
             players: room.players.map(p => {
                     return {
                         id: p.id,
