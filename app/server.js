@@ -10,6 +10,7 @@ app.use(bodyParser.json())
 
 require('./routes/user.routes')(app)
 require('./routes/location.routes')(app)
+require('./routes/rooms.routes')(app)
 
 const config = require('./configs/config.js')
 

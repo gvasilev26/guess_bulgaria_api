@@ -74,6 +74,9 @@ class WsServer {
                 wsBusiness.reconnect(ws, wsData.roomId)
                 break
             }
+            case 'room-privacy': {
+                wsBusiness.roomPrivacy(wsData.public, wsData.id, wsData.roomId)
+            }
             case 'close-room': {
                 let room = wsBusiness.closeRoom(wsData.roomId)
                 // remove everyone from the room on close
