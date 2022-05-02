@@ -125,6 +125,7 @@ class WebSocketBusiness {
         player.lastAnswer = socketData.answer
 
         if (this.hasEveryoneAnswered(room)) await this.endRound(room)
+        else this.notifyAllPlayers(room, 'player-answer', this.getIngameRoundData(room))
     }
 
     async nextRound (roomId, userId) {
@@ -302,7 +303,7 @@ class WebSocketBusiness {
                 image: room.currentRound?.image,
             },
             players: room.players.map(p => {
-                    return { id: p.id, color: p.color, username: p.username, isCreator: p.isCreator, points: p.points }
+                    return { id: p.id, color: p.color, username: p.username, isCreator: p.isCreator, points: p.points, answer: p.lastAnswer }
                 }
             )
         }

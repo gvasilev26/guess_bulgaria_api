@@ -25,6 +25,7 @@ GET /api/locations - returns all locations
 * current-data
 * make-creator
 * settings-change
+* player-answer
 * color-change
 * start-round
 * end-round
