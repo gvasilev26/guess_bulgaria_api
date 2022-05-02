@@ -7,7 +7,8 @@
     "start": "node app/server.js",
     "client": "node app/client.js",
     "scrap": "node app/scripts/scrapper.js",
-    "fix-coords": "node app/scripts/fix-coords-to-number.js"
+    "fix-coords": "node app/scripts/fix-coords-to-number.js",
+    "fix-image": "node app/scripts/fix-image-base64.js"
   },
   "author": "dm@auxcode.com, aa@auxcode.com",
   "license": "ISC",

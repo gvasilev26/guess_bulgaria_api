@@ -111,7 +111,8 @@ class WebSocketBusiness {
 
     async startGame (roomId, userId) {
         const room = this.rooms[roomId]
-        if (!room || room.players.length < 2 || room.players[0].id !== userId) return
+        // || room.players.length < 2
+        if (!room || room.players[0].id !== userId) return
 
         await this.changeRoundTarget(room)
     }
@@ -212,26 +213,34 @@ class WebSocketBusiness {
         }
         if (room.settings.regions.length > 0) query.regions = { $in: room.settings.regions }
 
-        const locations = await Location.find(query).exec()
+        const locations = await Location.aggregate(
+            [
+                { $match: query },
+                { $sample: { size: 1 } }
+            ]
+        )
 
         if (!locations.length) return undefined
-        return locations[Math.floor(Math.random() * locations.length)]
+        return locations[0]
     }
 
     notifyAllPlayers (room, type, message) {
         if(message.players){
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')));
         }
+        console.log(type, message);
         room.players.forEach(user => {
             if(user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
             else if(user.socket.readyState === 3){
                 console.log("NOT OK", user.id);
+                user.socket.send(JSON.stringify({ type, message }))
             }
         })
     }
 
     notifyPlayer(ws, type, message){
+        console.log(type, message);
         if(ws.readyState === 1)
             ws.send(JSON.stringify({ type, message }))
     }
@@ -290,7 +299,7 @@ class WebSocketBusiness {
             roundEndTime: room.roundEndTime,
             currentRound: {
                 name: room.currentRound?.name,
-                imageUrl: room.currentRound?.imageUrl,
+                image: room.currentRound?.image,
             },
             players: room.players.map(p => {
                     return { id: p.id, color: p.color, username: p.username, isCreator: p.isCreator, points: p.points }
