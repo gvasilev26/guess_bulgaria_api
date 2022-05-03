@@ -314,10 +314,10 @@ class WebSocketBusiness {
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
-            currentRound: {
-                name: room.currentRound?.name,
-                image: room.currentRound?.image,
-            },
+            currentRound: room.currentRound ? {
+                name: room.currentRound.name,
+                image: room.currentRound.image,
+            } : {},
             players: room.players.map(p => {
                     return {
                         id: p.id,
