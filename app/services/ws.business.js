@@ -15,7 +15,7 @@ class WebSocketBusiness {
 
         this.rooms[roomId] = {
             roomId: roomId,
-            isPublic: socketData.isPublic ?? true,
+            isPublic: !!socketData.isPublic,
             settings: {
                 regions: socketData.regions || [],
                 maxRounds: socketData.maxRounds || 10,
