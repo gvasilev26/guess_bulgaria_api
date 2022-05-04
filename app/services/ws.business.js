@@ -18,8 +18,8 @@ class WebSocketBusiness {
             isPublic: !!socketData.isPublic,
             settings: {
                 regions: socketData.regions || [],
-                maxRounds: socketData.maxRounds || 10,
-                answerTimeInSeconds: socketData.answerTimeInSeconds || 30,
+                maxRounds: socketData.maxRounds !== undefined ? socketData.maxRounds : 10,
+                answerTimeInSeconds: socketData.answerTimeInSeconds !== undefined ? socketData.answerTimeInSeconds : 30,
             },
             playedRounds: [],
             currentRound: undefined,
@@ -103,8 +103,8 @@ class WebSocketBusiness {
         if (!room || room.players[0].id !== socketData.id) return
         room.settings = {
             regions: socketData.regions || room.settings.regions || [],
-            maxRounds: socketData.maxRounds || room.settings.maxRounds || 10,
-            answerTimeInSeconds: socketData.answerTimeInSeconds || room.settings.answerTimeInSeconds || 30,
+            maxRounds: (socketData.maxRounds !== undefined ? socketData.maxRounds : room.settings.maxRounds),
+            answerTimeInSeconds: (socketData.answerTimeInSeconds !== undefined ? socketData.answerTimeInSeconds : room.settings.answerTimeInSeconds),
         }
         this.notifyAllPlayers(room, 'settings-change', room.settings)
     }
@@ -205,8 +205,11 @@ class WebSocketBusiness {
     endRound (room) {
         room.isRoundStarted = false;
         for (let player of room.players) {
-            if (!player.lastAnswer) {
+            //if the player has ran out of time, don't give points
+            if (!player.lastAnswer || player.lastAnswer[0] === 0) {
                 player.roundPoints = 0
+                //reset the answer so it's not displayed
+                player.lastAnswer = undefined;
                 continue
             }
             const distance = this.getDistance(player.lastAnswer[0], player.lastAnswer[1], room.currentRound.coordinates[0], room.currentRound.coordinates[1])
@@ -261,6 +264,7 @@ class WebSocketBusiness {
         if (message.players) {
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')))
         }
+        console.log("SEND", JSON.stringify({ type, message }));
         room.players.forEach(user => {
             if (user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
