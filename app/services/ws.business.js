@@ -264,7 +264,6 @@ class WebSocketBusiness {
         if (message.players) {
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')))
         }
-        console.log("SEND", JSON.stringify({ type, message }));
         room.players.forEach(user => {
             if (user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
