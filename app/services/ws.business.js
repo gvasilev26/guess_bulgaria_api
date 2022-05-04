@@ -24,10 +24,11 @@ class WebSocketBusiness {
             playedRounds: [],
             currentRound: undefined,
             roundEndTime: 0,
+            isRoundStarted: false,
             players: [{
                 socket: ws,
                 id: socketData.id,
-                status: 1,
+                isConnected: true,
                 perfectAnswers: 0,
                 color: socketData.color || 0,
                 username: socketData.username,
@@ -44,7 +45,6 @@ class WebSocketBusiness {
         if (!room) return
 
         delete this.rooms[roomId]
-        return room
     }
 
     addUser (ws, socketData) {
@@ -53,10 +53,18 @@ class WebSocketBusiness {
             this.notifyPlayer(ws, 'join-failed')
             return
         }
-        room.players.push({
+        let alreadyIn = false
+        for (let player of room.players) {
+            if (player.id === socketData.id) {
+                alreadyIn = true
+                player.socket = ws
+                player.isConnected = true
+            }
+        }
+        if (!alreadyIn) room.players.push({
             socket: ws,
             id: socketData.id,
-            status: 1,
+            isConnected: true,
             username: socketData.username,
             color: this.getFreeColor(room, socketData.color),
             roundPoints: undefined,
@@ -72,10 +80,14 @@ class WebSocketBusiness {
         const room = this.rooms[roomId]
         if (!room) return
 
+        this.removeUserFromRoom(room, userId)
+    }
+
+    removeUserFromRoom (room, userId) {
         let userIndex = room.players.findIndex((user) => user.id === userId)
         if (userIndex !== -1) room.players.splice(userIndex, 1)
 
-        if (!room.players.length) this.closeRoom(roomId)
+        if (!room.players.length) this.closeRoom(room.id)
         else {
             if (!userIndex) {
                 let leader = room.players[0]
@@ -103,17 +115,23 @@ class WebSocketBusiness {
 
         for (let player of room.players)
             if (player.id === ws.id) {
-                player.status = 0
+                if (room.currentRound === undefined) this.removeUserFromRoom(room, player.id)
+                else player.isConnected = false
                 break
             }
 
-        if (!room.players.length || room.players.every(player => !player.status)) this.closeRoom(ws.roomId)
+        if (!room.players.length || room.players.every(player => !this.isPlayerConnectionOpen(player)))
+            this.closeRoom(ws.roomId)
+        else if (this.hasEveryoneAnswered(room))
+            this.endRound(room)
+        else
+            this.notifyAllPlayers(room, 'player-leave', { players: room.players })
     }
 
     async startGame (roomId, userId) {
         const room = this.rooms[roomId]
         // || room.players.length < 2
-        if (!room || room.players[0].id !== userId) return
+        if (!room || room.players[0].id !== userId || room.currentRound !== undefined || room.isRoundStarted) return
 
         await this.changeRoundTarget(room)
     }
@@ -123,16 +141,16 @@ class WebSocketBusiness {
         if (!room) return
 
         let player = room.players.find(p => p.id === socketData.id)
-        if (player == null) return
+        if (player === undefined) return
         player.lastAnswer = socketData.answer
 
         this.notifyAllPlayers(room, 'player-answer', { 'id': player.id })
-        if (this.hasEveryoneAnswered(room)) await this.endRound(room)
+        if (this.hasEveryoneAnswered(room)) this.endRound(room)
     }
 
     async nextRound (roomId, userId) {
         const room = this.rooms[roomId]
-        if (!room || room.players[0].id !== userId) return
+        if (!room || room.players[0].id !== userId || room.isRoundStarted) return
 
         await this.changeRoundTarget(room)
     }
@@ -142,7 +160,7 @@ class WebSocketBusiness {
         if (!room) return
         for (let player of room.players)
             if (player.id === ws.id) {
-                player.status = 1
+                player.isConnected = true
                 player.socket = ws
                 break
             }
@@ -177,10 +195,15 @@ class WebSocketBusiness {
     }
 
     hasEveryoneAnswered (room) {
-        return room.players.every(player => player.lastAnswer !== undefined)
+        return room.players.every(player => player.lastAnswer !== undefined || this.isPlayerConnectionOpen(player))
     }
 
-    async endRound (room) {
+    isPlayerConnectionOpen (player) {
+        return player.socket.readyState === 1 || player.isConnected
+    }
+
+    endRound (room) {
+        room.isRoundStarted = false;
         for (let player of room.players) {
             if (!player.lastAnswer) {
                 player.roundPoints = 0
@@ -204,6 +227,7 @@ class WebSocketBusiness {
     }
 
     async changeRoundTarget (room) {
+        room.isRoundStarted = true;
         for (const player of room.players) player.lastAnswer = undefined
         if (room.currentRound) room.playedRounds.push(room.currentRound._id)
         if (room.playedRounds.length === room.settings.maxRounds) await this.endGame(room)
@@ -227,7 +251,7 @@ class WebSocketBusiness {
                 { $match: query },
                 { $sample: { size: 1 } }
             ]
-        )
+        ).exec()
 
         if (!locations.length) return undefined
         return locations[0]
@@ -237,19 +261,19 @@ class WebSocketBusiness {
         if (message.players) {
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')))
         }
-        console.log(type, message)
         room.players.forEach(user => {
             if (user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
             else if (user.socket.readyState === 3) {
-                console.log('NOT OK', user.id)
-                user.socket.send(JSON.stringify({ type, message }))
+                try{
+                    user.socket.send(JSON.stringify({ type, message }))
+                } catch (e){
+                }
             }
         })
     }
 
     notifyPlayer (ws, type, message) {
-        console.log(type, message)
         if (ws.readyState === 1)
             ws.send(JSON.stringify({ type, message }))
     }
@@ -260,7 +284,7 @@ class WebSocketBusiness {
         for (let player of room.players) {
             player.points = 0
             player.lastAnswer = undefined
-            if (!player.status) this.removeUser(room.roomId, player.id)
+            if (!this.isPlayerConnectionOpen(player)) this.removeUserFromRoom(room, player.id)
         }
         room.currentRound = undefined
         room.playedRounds = []
@@ -325,7 +349,8 @@ class WebSocketBusiness {
                         username: p.username,
                         isCreator: p.isCreator,
                         points: p.points,
-                        answer: p.lastAnswer
+                        answer: p.lastAnswer,
+                        isConnected: this.isPlayerConnectionOpen(p)
                     }
                 }
             )
@@ -352,7 +377,8 @@ class WebSocketBusiness {
                         points: p.points,
                         roundPoints: p.roundPoints,
                         answer: p.lastAnswer,
-                        hasAnswered: p.lastAnswer != null
+                        hasAnswered: p.lastAnswer !== undefined,
+                        isConnected: this.isPlayerConnectionOpen(p)
                     }
                 }
             )
