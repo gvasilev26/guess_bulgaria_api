@@ -364,9 +364,9 @@ class WebSocketBusiness {
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
             currentRound: {
-                name: room.currentRound.name,
-                coordinates: room.currentRound.coordinates,
-                description: room.currentRound.description,
+                name: !!room.currentRound ? room.currentRound.name : undefined,
+                coordinates: !!room.currentRound ? room.currentRound.coordinates : undefined,
+                description: !!room.currentRound ? room.currentRound.description : undefined,
             },
             players: room.players.map(p => {
                     return {
