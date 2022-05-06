@@ -43,8 +43,7 @@ const schema = mongoose.Schema({
                 default: 0
             },
         }
-    },
-    username: String
+    }
 })
 
 module.exports = mongoose.model('User', schema)
