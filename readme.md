@@ -7,7 +7,7 @@ GET /api/locations - returns all locations
 ```
 
 # Socket 
-## Request message types
+## Received message types
 * create
 * join
 * leave
@@ -19,7 +19,7 @@ GET /api/locations - returns all locations
 * reconnect
 * room-privacy
 
-## Response messages types
+## Send message types
 * player-join
 * player-leave
 * current-data
@@ -31,6 +31,7 @@ GET /api/locations - returns all locations
 * end-round
 * end-game
 * room-privacy-notifier
+* stats-update
 
 # .env
 ```dotenv

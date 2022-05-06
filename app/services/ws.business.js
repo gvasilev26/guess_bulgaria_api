@@ -203,13 +203,13 @@ class WebSocketBusiness {
     }
 
     endRound (room) {
-        room.isRoundStarted = false;
+        room.isRoundStarted = false
         for (let player of room.players) {
             //if the player has ran out of time, don't give points
             if (!player.lastAnswer || player.lastAnswer[0] === 0) {
                 player.roundPoints = 0
                 //reset the answer so it's not displayed
-                player.lastAnswer = undefined;
+                player.lastAnswer = undefined
                 continue
             }
             const distance = this.getDistance(player.lastAnswer[0], player.lastAnswer[1], room.currentRound.coordinates[0], room.currentRound.coordinates[1])
@@ -230,10 +230,13 @@ class WebSocketBusiness {
     }
 
     async changeRoundTarget (room) {
-        room.isRoundStarted = true;
+        room.isRoundStarted = true
         for (const player of room.players) player.lastAnswer = undefined
         if (room.currentRound) room.playedRounds.push(room.currentRound._id)
-        if (room.playedRounds.length === room.settings.maxRounds) await this.endGame(room)
+        if (room.playedRounds.length === room.settings.maxRounds) {
+            await this.endGame(room)
+            return
+        }
         room.currentRound = await this.getNextLocation(room)
         if (room.currentRound === undefined) {
             await this.endGame(room)
@@ -268,9 +271,9 @@ class WebSocketBusiness {
             if (user.socket.readyState === 1)
                 user.socket.send(JSON.stringify({ type, message }))
             else if (user.socket.readyState === 3) {
-                try{
+                try {
                     user.socket.send(JSON.stringify({ type, message }))
-                } catch (e){
+                } catch (e) {
                 }
             }
         })
@@ -296,19 +299,28 @@ class WebSocketBusiness {
 
     async updatePlayersStatistics (room) {
         const maxPoints = Math.max(...room.players.map(p => p.points))
-        let requests = []
-        for (let player of room.players) {
-            requests.push(User.updateOne({ _id: player.id }, {
-                $inc: {
-                    'stats.multi.totalPoints': player.points,
-                    'stats.multi.roundsPlayed': room.playedRounds.length,
-                    'stats.multi.perfectAnswers': player.perfectAnswers,
-                    'stats.multi.gamesPlayed': 1,
-                    'stats.multi.firstPlaces': maxPoints === player.points ? 1 : 0,
-                }
-            }).exec())
+        const ids = room.players.map(p => p.id)
+        const users = await User.find({ _id: { $in: ids } }, { _id: 1, stats: 1 }).exec()
+        for (let user of users) {
+            const player = room.players.find(p => p.id === user._id.toString())
+
+            const message = {
+                totalPoints: [user.stats.multi.totalPoints, player.points],
+                roundsPlayed: [user.stats.multi.roundsPlayed, room.playedRounds.length],
+                perfectAnswers: [user.stats.multi.perfectAnswers, player.perfectAnswers],
+                gamesPlayed: [user.stats.multi.gamesPlayed, 1],
+                firstPlaces: [user.stats.multi.gamesPlayed, maxPoints === player.points ? 1 : 0],
+            }
+
+            this.notifyPlayer(player.socket, 'stats-update', message)
+
+            user.stats.multi.totalPoints += message['totalPoints'][1]
+            user.stats.multi.roundsPlayed += message['roundsPlayed'][1]
+            user.stats.multi.perfectAnswers += message['perfectAnswers'][1]
+            user.stats.multi.gamesPlayed += message['gamesPlayed'][1]
+            user.stats.multi.firstPlaces += message['firstPlaces'][1]
         }
-        await Promise.all(requests)
+        await User.bulkSave(users)
     }
 
     roomPrivacy (isPublic, userId, roomId) {
