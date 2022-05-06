@@ -10,10 +10,10 @@ class WebSocketBusiness {
         let roomId
         do {
             roomId = Math.floor(Math.random() * 899999 + 100000)
-            if (!this.rooms[roomId]) break
+            if (!this.rooms.get(roomId)) break
         } while (true)
 
-        this.rooms[roomId] = {
+        this.rooms.set(roomId, {
             roomId: roomId,
             isPublic: !!socketData.isPublic,
             settings: {
@@ -36,19 +36,16 @@ class WebSocketBusiness {
                 lastAnswer: undefined,
                 points: 0,
             }]
-        }
-        this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms[roomId]))
+        })
+        this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms.get(roomId)))
     }
 
-    closeRoom (roomId) {
-        let room = this.rooms[roomId]
-        if (!room) return
-
-        delete this.rooms[roomId]
+    closeRoom (room) {
+        this.rooms.delete(room.roomId)
     }
 
     addUser (ws, socketData) {
-        const room = this.rooms[socketData.roomId]
+        const room = this.rooms.get(socketData.roomId)
         if (!room || room.players.length >= 16) {
             this.notifyPlayer(ws, 'join-failed')
             return
@@ -77,7 +74,7 @@ class WebSocketBusiness {
     }
 
     removeUser (roomId, userId) {
-        const room = this.rooms[roomId]
+        const room = this.rooms.get(roomId)
         if (!room) return
 
         this.removeUserFromRoom(room, userId)
@@ -87,7 +84,7 @@ class WebSocketBusiness {
         let userIndex = room.players.findIndex((user) => user.id === userId)
         if (userIndex !== -1) room.players.splice(userIndex, 1)
 
-        if (!room.players.length) this.closeRoom(room.id)
+        if (!room.players.length) this.closeRoom(room)
         else {
             if (!userIndex) {
                 let leader = room.players[0]
@@ -99,7 +96,7 @@ class WebSocketBusiness {
     }
 
     changeSettings (socketData) {
-        const room = this.rooms[socketData.roomId]
+        const room = this.rooms.get(socketData.roomId)
         if (!room || room.players[0].id !== socketData.id) return
         room.settings = {
             regions: socketData.regions || room.settings.regions || [],
@@ -110,7 +107,7 @@ class WebSocketBusiness {
     }
 
     disconnectUser (ws) {
-        const room = this.rooms[ws.roomId]
+        const room = this.rooms.get(ws.roomId)
         if (!room) return
 
         for (let player of room.players)
@@ -121,7 +118,7 @@ class WebSocketBusiness {
             }
 
         if (!room.players.length || room.players.every(player => !this.isPlayerConnectionOpen(player)))
-            this.closeRoom(ws.roomId)
+            this.closeRoom(room)
         else if (this.hasEveryoneAnswered(room))
             this.endRound(room)
         else
@@ -129,7 +126,7 @@ class WebSocketBusiness {
     }
 
     async startGame (roomId, userId) {
-        const room = this.rooms[roomId]
+        const room = this.rooms.get(roomId)
         // || room.players.length < 2
         if (!room || room.players[0].id !== userId || room.currentRound !== undefined || room.isRoundStarted) return
 
@@ -137,7 +134,7 @@ class WebSocketBusiness {
     }
 
     async answer (socketData) {
-        const room = this.rooms[socketData.roomId]
+        const room = this.rooms.get(socketData.roomId)
         if (!room) return
 
         let player = room.players.find(p => p.id === socketData.id)
@@ -149,14 +146,14 @@ class WebSocketBusiness {
     }
 
     async nextRound (roomId, userId) {
-        const room = this.rooms[roomId]
+        const room = this.rooms.get(roomId)
         if (!room || room.players[0].id !== userId || room.isRoundStarted) return
 
         await this.changeRoundTarget(room)
     }
 
     reconnect (ws, roomId) {
-        const room = this.rooms[roomId]
+        const room = this.rooms.get(roomId)
         if (!room) return
         for (let player of room.players)
             if (player.id === ws.id) {
@@ -169,7 +166,7 @@ class WebSocketBusiness {
     }
 
     changeColor (roomId, userId, color) {
-        const room = this.rooms[roomId]
+        const room = this.rooms.get(roomId)
         if (!room || color > 15 || color < 0 || !this.isColorFree(room, color)) return
 
         for (let player of room.players)
@@ -295,6 +292,7 @@ class WebSocketBusiness {
         room.currentRound = undefined
         room.playedRounds = []
         room.roundEndTime = 0
+        room.isRoundStarted = false
     }
 
     async updatePlayersStatistics (room) {
@@ -324,7 +322,7 @@ class WebSocketBusiness {
     }
 
     roomPrivacy (isPublic, userId, roomId) {
-        let room = this.rooms[roomId]
+        let room = this.rooms.get(roomId)
         if (!room || !room.players.find(p => p.isCreator).id === userId) return
         room.isPublic = isPublic
         this.notifyAllPlayers(room, 'room-privacy-notifier', { isPublic })
