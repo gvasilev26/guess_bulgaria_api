@@ -240,6 +240,7 @@ class WebSocketBusiness {
             return
         }
         room.roundEndTime = Date.now() + room.settings.answerTimeInSeconds * 1000
+        room.roundStartTime = Date.now() + 3300
         this.notifyAllPlayers(room, 'start-round', this.getIngameRoundData(room))
     }
 
@@ -351,6 +352,7 @@ class WebSocketBusiness {
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
+            roundStartTime: room.roundStartTime,
             currentRound: room.currentRound ? {
                 name: room.currentRound.name,
                 image: room.currentRound.image,
