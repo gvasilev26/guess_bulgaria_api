@@ -17,7 +17,6 @@ GET /api/locations - returns all locations
 * answer
 * next-round
 * reconnect
-* room-privacy
 
 ## Send message types
 * player-join
@@ -30,7 +29,6 @@ GET /api/locations - returns all locations
 * start-round
 * end-round
 * end-game
-* room-privacy-notifier
 * stats-update
 
 # .env

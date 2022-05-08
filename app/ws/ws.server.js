@@ -74,10 +74,6 @@ class WsServer {
                 wsBusiness.reconnect(ws, wsData.roomId)
                 break
             }
-            case 'room-privacy': {
-                wsBusiness.roomPrivacy(wsData.isPublic, wsData.id, wsData.roomId)
-                break;
-            }
         }
     }
 

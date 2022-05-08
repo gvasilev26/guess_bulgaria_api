@@ -4,7 +4,7 @@ const Location = require('../models/location.model')
 class WebSocketBusiness {
     rooms = new Map()
 
-    createRoom (ws, socketData) {
+    createRoom(ws, socketData) {
         if (!socketData.id) return
 
         let roomId
@@ -15,8 +15,8 @@ class WebSocketBusiness {
 
         this.rooms.set(roomId, {
             roomId: roomId,
-            isPublic: !!socketData.isPublic,
             settings: {
+                isPublic: !!socketData.isPublic,
                 regions: socketData.regions || [],
                 maxRounds: socketData.maxRounds !== undefined ? socketData.maxRounds : 10,
                 answerTimeInSeconds: socketData.answerTimeInSeconds !== undefined ? socketData.answerTimeInSeconds : 30,
@@ -40,11 +40,11 @@ class WebSocketBusiness {
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms.get(roomId)))
     }
 
-    closeRoom (room) {
+    closeRoom(room) {
         this.rooms.delete(room.roomId)
     }
 
-    addUser (ws, socketData) {
+    addUser(ws, socketData) {
         const room = this.rooms.get(socketData.roomId)
         if (!room || room.players.length >= 16) {
             this.notifyPlayer(ws, 'join-failed')
@@ -73,14 +73,14 @@ class WebSocketBusiness {
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(room))
     }
 
-    removeUser (roomId, userId) {
+    removeUser(roomId, userId) {
         const room = this.rooms.get(roomId)
         if (!room) return
 
         this.removeUserFromRoom(room, userId)
     }
 
-    removeUserFromRoom (room, userId) {
+    removeUserFromRoom(room, userId) {
         let userIndex = room.players.findIndex((user) => user.id === userId)
         if (userIndex !== -1) room.players.splice(userIndex, 1)
 
@@ -95,18 +95,19 @@ class WebSocketBusiness {
         }
     }
 
-    changeSettings (socketData) {
+    changeSettings(socketData) {
         const room = this.rooms.get(socketData.roomId)
         if (!room || room.players[0].id !== socketData.id) return
         room.settings = {
             regions: socketData.regions || room.settings.regions || [],
             maxRounds: (socketData.maxRounds !== undefined ? socketData.maxRounds : room.settings.maxRounds),
             answerTimeInSeconds: (socketData.answerTimeInSeconds !== undefined ? socketData.answerTimeInSeconds : room.settings.answerTimeInSeconds),
+            isPublic: socketData.isPublic !== undefined ? socketData.isPublic : room.settings.isPublic || false
         }
         this.notifyAllPlayers(room, 'settings-change', room.settings)
     }
 
-    disconnectUser (ws) {
+    disconnectUser(ws) {
         const room = this.rooms.get(ws.roomId)
         if (!room) return
 
@@ -125,7 +126,7 @@ class WebSocketBusiness {
             this.notifyAllPlayers(room, 'player-leave', { players: room.players })
     }
 
-    async startGame (roomId, userId) {
+    async startGame(roomId, userId) {
         const room = this.rooms.get(roomId)
         // || room.players.length < 2
         if (!room || room.players[0].id !== userId || room.currentRound !== undefined || room.isRoundStarted) return
@@ -133,7 +134,7 @@ class WebSocketBusiness {
         await this.changeRoundTarget(room)
     }
 
-    async answer (socketData) {
+    async answer(socketData) {
         const room = this.rooms.get(socketData.roomId)
         if (!room) return
 
@@ -145,14 +146,14 @@ class WebSocketBusiness {
         if (this.hasEveryoneAnswered(room)) this.endRound(room)
     }
 
-    async nextRound (roomId, userId) {
+    async nextRound(roomId, userId) {
         const room = this.rooms.get(roomId)
         if (!room || room.players[0].id !== userId || room.isRoundStarted) return
 
         await this.changeRoundTarget(room)
     }
 
-    reconnect (ws, roomId) {
+    reconnect(ws, roomId) {
         const room = this.rooms.get(roomId)
         if (!room) return
         for (let player of room.players)
@@ -165,7 +166,7 @@ class WebSocketBusiness {
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(room))
     }
 
-    changeColor (roomId, userId, color) {
+    changeColor(roomId, userId, color) {
         const room = this.rooms.get(roomId)
         if (!room || color > 15 || color < 0 || !this.isColorFree(room, color)) return
 
@@ -180,26 +181,26 @@ class WebSocketBusiness {
 
     // helper functions
 
-    getFreeColor (room, color) {
+    getFreeColor(room, color) {
         if (this.isColorFree(room, color)) return color
         return this.getFreeColor(room, Math.floor(Math.random() * 16))
     }
 
-    isColorFree (room, color) {
+    isColorFree(room, color) {
         for (const player of room.players)
             if (player.color === color) return false
         return true
     }
 
-    hasEveryoneAnswered (room) {
+    hasEveryoneAnswered(room) {
         return room.players.every(player => player.lastAnswer !== undefined || this.isPlayerConnectionOpen(player))
     }
 
-    isPlayerConnectionOpen (player) {
+    isPlayerConnectionOpen(player) {
         return player.socket.readyState === 1 || player.isConnected
     }
 
-    endRound (room) {
+    endRound(room) {
         room.isRoundStarted = false
         for (let player of room.players) {
             //if the player has ran out of time, don't give points
@@ -226,7 +227,7 @@ class WebSocketBusiness {
         this.notifyAllPlayers(room, 'end-round', this.getFullRoundData(room))
     }
 
-    async changeRoundTarget (room) {
+    async changeRoundTarget(room) {
         room.isRoundStarted = true
         for (const player of room.players) player.lastAnswer = undefined
         if (room.currentRound) room.playedRounds.push(room.currentRound._id)
@@ -244,7 +245,7 @@ class WebSocketBusiness {
         this.notifyAllPlayers(room, 'start-round', this.getIngameRoundData(room))
     }
 
-    async getNextLocation (room) {
+    async getNextLocation(room) {
         let query = {
             _id: { $nin: room.playedRounds }
         }
@@ -261,7 +262,7 @@ class WebSocketBusiness {
         return locations[0]
     }
 
-    notifyAllPlayers (room, type, message) {
+    notifyAllPlayers(room, type, message) {
         if (message.players) {
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')))
         }
@@ -277,12 +278,12 @@ class WebSocketBusiness {
         })
     }
 
-    notifyPlayer (ws, type, message) {
+    notifyPlayer(ws, type, message) {
         if (ws.readyState === 1)
             ws.send(JSON.stringify({ type, message }))
     }
 
-    async endGame (room) {
+    async endGame(room) {
         this.notifyAllPlayers(room, 'end-game', this.getFullRoundData(room))
         await this.updatePlayersStatistics(room)
         for (let player of room.players) {
@@ -296,7 +297,7 @@ class WebSocketBusiness {
         room.isRoundStarted = false
     }
 
-    async updatePlayersStatistics (room) {
+    async updatePlayersStatistics(room) {
         const maxPoints = Math.max(...room.players.map(p => p.points))
         const ids = room.players.map(p => p.id)
         const users = await User.find({ _id: { $in: ids } }, { _id: 1, stats: 1 }).exec()
@@ -322,14 +323,14 @@ class WebSocketBusiness {
         await User.bulkSave(users)
     }
 
-    roomPrivacy (isPublic, userId, roomId) {
+    roomPrivacy(isPublic, userId, roomId) {
         let room = this.rooms.get(roomId)
         if (!room || !room.players.find(p => p.isCreator).id === userId) return
-        room.isPublic = isPublic
-        this.notifyAllPlayers(room, 'room-privacy-notifier', { isPublic })
+        room.settings.isPublic = isPublic
+        this.notifyAllPlayers(room, 'settings-change', room.settings)
     }
 
-    getDistance (lat1, lon1, lat2, lon2) {
+    getDistance(lat1, lon1, lat2, lon2) {
         const dLat = this.deg2rad(lat2 - lat1)  // deg2rad below
         const dLon = this.deg2rad(lon2 - lon1)
         const a =
@@ -341,14 +342,13 @@ class WebSocketBusiness {
         return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     }
 
-    deg2rad (deg) {
+    deg2rad(deg) {
         return deg * (Math.PI / 180)
     }
 
-    getIngameRoundData (room) {
+    getIngameRoundData(room) {
         return {
             roomId: room.roomId,
-            isPublic: room.isPublic,
             settings: room.settings,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
@@ -358,24 +358,23 @@ class WebSocketBusiness {
                 image: room.currentRound.image,
             } : {},
             players: room.players.map(p => {
-                    return {
-                        id: p.id,
-                        color: p.color,
-                        username: p.username,
-                        isCreator: p.isCreator,
-                        points: p.points,
-                        answer: p.lastAnswer,
-                        isConnected: this.isPlayerConnectionOpen(p)
-                    }
+                return {
+                    id: p.id,
+                    color: p.color,
+                    username: p.username,
+                    isCreator: p.isCreator,
+                    points: p.points,
+                    answer: p.lastAnswer,
+                    isConnected: this.isPlayerConnectionOpen(p)
                 }
+            }
             )
         }
     }
 
-    getFullRoundData (room) {
+    getFullRoundData(room) {
         return {
             settings: room.settings,
-            isPublic: room.isPublic,
             rounds: room.playedRounds.length,
             roundEndTime: room.roundEndTime,
             currentRound: {
@@ -384,18 +383,18 @@ class WebSocketBusiness {
                 description: !!room.currentRound ? room.currentRound.description : undefined,
             },
             players: room.players.map(p => {
-                    return {
-                        id: p.id,
-                        color: p.color,
-                        username: p.username,
-                        isCreator: p.isCreator,
-                        points: p.points,
-                        roundPoints: p.roundPoints,
-                        answer: p.lastAnswer,
-                        hasAnswered: p.lastAnswer !== undefined,
-                        isConnected: this.isPlayerConnectionOpen(p)
-                    }
+                return {
+                    id: p.id,
+                    color: p.color,
+                    username: p.username,
+                    isCreator: p.isCreator,
+                    points: p.points,
+                    roundPoints: p.roundPoints,
+                    answer: p.lastAnswer,
+                    hasAnswered: p.lastAnswer !== undefined,
+                    isConnected: this.isPlayerConnectionOpen(p)
                 }
+            }
             )
         }
     }
