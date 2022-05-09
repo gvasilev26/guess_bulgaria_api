@@ -10,7 +10,7 @@ class WebSocketBusiness {
         let roomId
         do {
             roomId = Math.floor(Math.random() * 899999 + 100000)
-            if (!this.rooms.get(roomId)) break
+            if (!this.rooms.has(roomId)) break
         } while (true)
 
         this.rooms.set(roomId, {

@@ -1,7 +1,7 @@
 const User = require('../models/user.model')
 
 exports.createUser = async (req, res) => {
-    let user = new User({ username: 'Random generated name' })
+    let user = new User()
     await user.save()
     return res.status(201).send({ ...user._doc })
 }
