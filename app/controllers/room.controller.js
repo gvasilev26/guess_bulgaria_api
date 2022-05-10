@@ -1,13 +1,17 @@
-const wsBusiness = require("../services/ws.business")
+const wsBusiness = require('../services/ws.business')
 
 exports.getPublicRooms = async (_, res) => {
-    return res.status(200).send(Object.values(wsBusiness.rooms)
-        .filter(r => r.settings.isPublic && r.currentRound === undefined).map(r => {
-        return {
-            roomId: r.roomId,
-            creatorName: r.players.find(p => p.isCreator).username,
-            playerCount: r.players.length,
-            settings: r.settings
+    let output = []
+    for (let value of wsBusiness.rooms.values()) {
+        if (value.settings.isPublic && value.currentRound === undefined) {
+            output.push({
+                roomId: value.roomId,
+                creatorName: value.players.find(p => p.isCreator).username,
+                playerCount: value.players.length,
+                settings: value.settings
+            })
         }
-    }))
+    }
+
+    return res.status(200).send(output)
 }
