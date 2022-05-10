@@ -128,8 +128,7 @@ class WebSocketBusiness {
 
     async startGame(roomId, userId) {
         const room = this.rooms.get(roomId)
-        // || room.players.length < 2
-        if (!room || room.players[0].id !== userId || room.currentRound !== undefined || room.isRoundStarted) return
+        if (!room || room.players[0].id !== userId || room.currentRound !== undefined || room.isRoundStarted || room.players.length < 2) return
 
         await this.changeRoundTarget(room)
     }
