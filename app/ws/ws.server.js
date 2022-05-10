@@ -34,7 +34,6 @@ class WsServer {
 
     async parseMessage (message, ws) {
         let wsData = JSON.parse(message)
-        console.log(wsData)
         ws.id = wsData.id
         ws.roomId = wsData.roomId
         switch (wsData.type) {
