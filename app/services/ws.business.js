@@ -192,7 +192,7 @@ class WebSocketBusiness {
     }
 
     hasEveryoneAnswered(room) {
-        return room.players.every(player => player.lastAnswer !== undefined || this.isPlayerConnectionOpen(player))
+        return room.players.every(player => player.lastAnswer !== undefined || !this.isPlayerConnectionOpen(player))
     }
 
     isPlayerConnectionOpen(player) {
