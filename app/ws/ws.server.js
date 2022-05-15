@@ -73,6 +73,10 @@ class WsServer {
                 wsBusiness.reconnect(ws, wsData.roomId)
                 break
             }
+            case 'round-loaded': {
+                wsBusiness.roundLoaded(wsData.id, wsData.roomId)
+                break;
+            }
         }
     }
 

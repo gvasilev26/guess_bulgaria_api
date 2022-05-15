@@ -1,6 +1,8 @@
 const User = require('../models/user.model')
 const Location = require('../models/location.model')
 
+const ROUND_START_TIMER = 3000;
+
 class WebSocketBusiness {
     rooms = new Map()
 
@@ -22,7 +24,6 @@ class WebSocketBusiness {
             },
             playedRounds: [],
             currentRound: undefined,
-            roundEndTime: 0,
             isRoundStarted: false,
             players: [{
                 socket: ws,
@@ -34,6 +35,7 @@ class WebSocketBusiness {
                 isCreator: true,
                 lastAnswer: undefined,
                 points: 0,
+                roundLoaded: false
             }]
         })
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms.get(roomId)))
@@ -67,6 +69,7 @@ class WebSocketBusiness {
             isCreator: false,
             lastAnswer: undefined,
             points: 0,
+            perfectAnswers: 0
         })
         this.notifyAllPlayers(room, 'player-join', { players: room.players })
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(room))
@@ -238,8 +241,6 @@ class WebSocketBusiness {
             await this.endGame(room)
             return
         }
-        room.roundEndTime = Date.now() + room.settings.answerTimeInSeconds * 1000
-        room.roundStartTime = Date.now() + 3300
         this.notifyAllPlayers(room, 'start-round', this.getIngameRoundData(room))
     }
 
@@ -261,7 +262,7 @@ class WebSocketBusiness {
     }
 
     notifyAllPlayers(room, type, message) {
-        if (message.players) {
+        if (message != null && message.players) {
             message.players = message.players.map(p => Object.fromEntries(Object.entries(p).filter(e => e[0] !== 'socket')))
         }
         room.players.forEach(user => {
@@ -291,7 +292,6 @@ class WebSocketBusiness {
         }
         room.currentRound = undefined
         room.playedRounds = []
-        room.roundEndTime = 0
         room.isRoundStarted = false
     }
 
@@ -350,8 +350,7 @@ class WebSocketBusiness {
             roomId: room.roomId,
             settings: room.settings,
             rounds: room.playedRounds.length,
-            roundEndTime: room.roundEndTime,
-            roundStartTime: room.roundStartTime,
+            timer: ROUND_START_TIMER,
             currentRound: room.currentRound ? {
                 name: room.currentRound.name,
                 image: room.currentRound.image,
@@ -375,7 +374,6 @@ class WebSocketBusiness {
         return {
             settings: room.settings,
             rounds: room.playedRounds.length,
-            roundEndTime: room.roundEndTime,
             currentRound: {
                 name: !!room.currentRound ? room.currentRound.name : undefined,
                 coordinates: !!room.currentRound ? room.currentRound.coordinates : undefined,
@@ -396,6 +394,22 @@ class WebSocketBusiness {
             }
             )
         }
+    }
+
+    roundLoaded(userId, roomId) {
+        const room = this.rooms.get(roomId);
+        const player = room.players.find(p => p.id === userId)
+        if (!room || !player) return;
+        player.roundLoaded = true;
+
+        //TODO Wait max 10s for everyone to load (save first loaded time in room)
+        if (room.players.every(p => p.roundLoaded || !this.isPlayerConnectionOpen(p))) this.timerStart(room)
+
+    }
+
+    timerStart(room) {
+        this.notifyAllPlayers(room, 'timer-start', { timer: ROUND_START_TIMER })
+        setTimeout(() => this.notifyAllPlayers(room, 'timer-end'), ROUND_START_TIMER + 500)
     }
 }
 
