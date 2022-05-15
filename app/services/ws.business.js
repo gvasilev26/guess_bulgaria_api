@@ -34,8 +34,7 @@ class WebSocketBusiness {
                 username: socketData.username,
                 isCreator: true,
                 lastAnswer: undefined,
-                points: 0,
-                roundLoaded: false
+                points: 0
             }]
         })
         this.notifyPlayer(ws, 'current-data', this.getIngameRoundData(this.rooms.get(roomId)))
@@ -223,6 +222,7 @@ class WebSocketBusiness {
 
             if (player.roundPoints < 0) player.roundPoints = 0
             player.points += player.roundPoints
+            player.roundLoaded = false;
         }
 
         this.notifyAllPlayers(room, 'end-round', this.getFullRoundData(room))
@@ -399,17 +399,22 @@ class WebSocketBusiness {
     roundLoaded(userId, roomId) {
         const room = this.rooms.get(roomId);
         const player = room.players.find(p => p.id === userId)
-        if (!room || !player) return;
+        if (!room || !player || room.startedLoading) return;
+        room.startedLoading = true;
         player.roundLoaded = true;
 
         //TODO Wait max 10s for everyone to load (save first loaded time in room)
+        //todo what if player reconnects and resends this? It should start the round twice
         if (room.players.every(p => p.roundLoaded || !this.isPlayerConnectionOpen(p))) this.timerStart(room)
 
     }
 
     timerStart(room) {
         this.notifyAllPlayers(room, 'timer-start', { timer: ROUND_START_TIMER })
-        setTimeout(() => this.notifyAllPlayers(room, 'timer-end'), ROUND_START_TIMER + 500)
+        setTimeout(() => {
+            this.notifyAllPlayers(room, 'timer-end');
+            room.startedLoading = false;
+        }, ROUND_START_TIMER + 500)
     }
 }
 
