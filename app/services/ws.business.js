@@ -302,7 +302,7 @@ class WebSocketBusiness {
         for (let user of users) {
             const player = room.players.find(p => p.id === user._id.toString())
 
-            const message = {
+            const statsChanges = {
                 totalPoints: [user.stats.multi.totalPoints, player.points],
                 roundsPlayed: [user.stats.multi.roundsPlayed, room.playedRounds.length],
                 perfectAnswers: [user.stats.multi.perfectAnswers, player.perfectAnswers],
@@ -310,13 +310,14 @@ class WebSocketBusiness {
                 firstPlaces: [user.stats.multi.gamesPlayed, maxPoints === player.points ? 1 : 0],
             }
 
-            this.notifyPlayer(player.socket, 'stats-update', message)
+            user.stats.multi.totalPoints += statsChanges['totalPoints'][1]
+            user.stats.multi.roundsPlayed += statsChanges['roundsPlayed'][1]
+            user.stats.multi.perfectAnswers += statsChanges['perfectAnswers'][1]
+            user.stats.multi.gamesPlayed += statsChanges['gamesPlayed'][1]
+            user.stats.multi.firstPlaces += statsChanges['firstPlaces'][1]
 
-            user.stats.multi.totalPoints += message['totalPoints'][1]
-            user.stats.multi.roundsPlayed += message['roundsPlayed'][1]
-            user.stats.multi.perfectAnswers += message['perfectAnswers'][1]
-            user.stats.multi.gamesPlayed += message['gamesPlayed'][1]
-            user.stats.multi.firstPlaces += message['firstPlaces'][1]
+            this.notifyPlayer(player.socket, 'stats-update', { statsChanges, overall: user.stats.multi })
+
         }
         await User.bulkSave(users)
     }
