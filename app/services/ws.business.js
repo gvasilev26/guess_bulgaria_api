@@ -399,8 +399,7 @@ class WebSocketBusiness {
     roundLoaded(userId, roomId) {
         const room = this.rooms.get(roomId);
         const player = room.players.find(p => p.id === userId)
-        if (!room || !player || room.startedLoading) return;
-        room.startedLoading = true;
+        if (!room || !player) return;
         player.roundLoaded = true;
 
         //TODO Wait max 10s for everyone to load (save first loaded time in room)
@@ -413,7 +412,6 @@ class WebSocketBusiness {
         this.notifyAllPlayers(room, 'timer-start', { timer: ROUND_START_TIMER })
         setTimeout(() => {
             this.notifyAllPlayers(room, 'timer-end');
-            room.startedLoading = false;
         }, ROUND_START_TIMER + 500)
     }
 }
